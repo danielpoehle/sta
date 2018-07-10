@@ -3,7 +3,8 @@ setwd("/home/daniel/Dokumente/Systematisierung Analyse 2015/Pauls Skripte/")
 source("a-v-calculations.R")
 source("T10kmCalculator.R")
 
-staFolder <- "./result_detail_v9/STAs/"
+folder <- "./result_detail_v10/"
+staFolder <- paste0(folder, "STAs/")
 
 
 files <- list.files(path = staFolder, full.names = T, pattern = ".csv$")
@@ -12,19 +13,28 @@ fileNames <- list.files(path = staFolder, full.names = F, pattern = ".csv$")
 staGroups <- read.csv2(file = "./2013_Fahrlagen/STAGROUPS_v06.csv", stringsAsFactors = F)
 staGroups$PARTNER[is.na(staGroups$PARTNER)] <- ""
 
-tempFrame <- data.frame()
-for(i in 1:length(files)){
-    tempFrame <- rbind(tempFrame, read.csv2(file = files[i], stringsAsFactors = F))
-}
-
-dt <- tempFrame[!duplicated(tempFrame[,c("TFZ", "TOTALWEIGHT", "NUM_TFZ")]),c("TFZ", "TOTALWEIGHT", "NUM_TFZ", "VMAX")]
-#dt <- rbind(dt, data.frame(TRACTION = c("189-2", "185-2", "185-2", "185-2", "203-1"), TOTALMASS = c(2945, 4000, 5000, 5500, 1950), DOUBLETRACTION = F, VMAX = 100, stringsAsFactors = F))
+dt <- read.csv2(file = paste0(folder, "TFZ_Frame.csv"))
 
 avList <- list()
 for(j in 1:length(dt$TFZ)){
     print(j)
     elem <- tfzNames[tfzNames$name == dt$TFZ[j], ]
-    avList <- c(avList, list(getAVModel(elem$i, elem$j, dt$TOTALWEIGHT[j], dt$NUM_TFZ[j], addTfzMass = F)))
+    avList <- c(avList, list(getAVModel(elem$i, elem$j, dt$TOTALWEIGHT[j], dt$NUM_TFZ[j], addTfzMass = T)))
+}
+
+tempFrame <- data.frame()
+for(i in 1:length(files)){
+  tempFrame <- rbind(tempFrame, read.csv2(file = files[i], stringsAsFactors = F))
+}
+
+ds <- tempFrame[!duplicated(tempFrame[,c("TFZ", "TOTALWEIGHT", "NUM_TFZ")]),c("TFZ", "TOTALWEIGHT", "NUM_TFZ", "VMAX")]
+#ds <- rbind(dt, data.frame(TRACTION = c("189-2", "185-2", "185-2", "185-2", "203-1"), TOTALMASS = c(2945, 4000, 5000, 5500, 1950), DOUBLETRACTION = F, VMAX = 100, stringsAsFactors = F))
+
+avSTA <- list()
+for(j in 1:length(ds$TFZ)){
+  print(j)
+  elem <- tfzNames[tfzNames$name == ds$TFZ[j], ]
+  avSTA <- c(avSTA, list(getAVModel(elem$i, elem$j, ds$TOTALWEIGHT[j], ds$NUM_TFZ[j], addTfzMass = F)))
 }
 
 
@@ -64,8 +74,8 @@ for(i in 1:length(staGroups$ID)){
         check_a <- logical(length(tempFrame$X))
         
         for(k in 1:length(tempFrame$X)){
-            p <- which(tempFrame$TFZ[k] == dt$TFZ & tempFrame$TOTALWEIGHT[k] == dt$TOTALWEIGHT & tempFrame$NUM_TFZ[k] == dt$NUM_TFZ)
-            check_a[k] <- sum(avList[[p]]$a[1:ind] >= a_tol[1:ind]) == ind
+            p <- which(tempFrame$TFZ[k] == ds$TFZ & tempFrame$TOTALWEIGHT[k] == ds$TOTALWEIGHT & tempFrame$NUM_TFZ[k] == ds$NUM_TFZ)
+            check_a[k] <- sum(avSTA[[p]]$a[1:ind] >= a_tol[1:ind]) == ind
         }
         a_frame <- cbind(a_frame, check_a)
     }
@@ -157,7 +167,7 @@ for(i in 1:length(staGroups$ID)){
     t10 <- integer(0)
     for(n in 1:length(sol$a)){
         elem <- tfzNames[tfzNames$name == sol$TFZ[n], ]
-        avModel <- getAVModel(i = elem$i, j = elem$j, m = sol$TOTALWEIGHT[n], anzTfz = sol$NUM_TFZ[n], addTfzMass = F)
+        avModel <- getAVModel(i = elem$i, j = elem$j, m = sol$TOTALWEIGHT[n], anzTfz = sol$NUM_TFZ[n], addTfzMass = T)
         t10 <- c(t10, calculate10km(avModel = avModel,vmax = sol$v[n], breakclass = sol$c[n]))
     }
     sol$T10 <- t10
@@ -169,14 +179,14 @@ for(i in 1:length(staGroups$ID)){
     t10 <- integer(0)
     for(n in 1:length(all90$a)){
         elem <- tfzNames[tfzNames$name == all90$TFZ[n], ]
-        avModel <- getAVModel(i = elem$i, j = elem$j, m = all90$TOTALWEIGHT[n], anzTfz = all90$NUM_TFZ[n], addTfzMass = F)
+        avModel <- getAVModel(i = elem$i, j = elem$j, m = all90$TOTALWEIGHT[n], anzTfz = all90$NUM_TFZ[n], addTfzMass = T)
         t10 <- c(t10, calculate10km(avModel = avModel,vmax = all90$v[n], breakclass = all90$c[n]))
     }
     
     all90$T10 <- t10
     
-    write.csv2(all90, file = paste0("./result_detail_v9/all90/", staGroups$ID[i], ".csv"), row.names = F)
-    write.csv2(sol, file = paste0("./result_detail_v9/borders_a(v)/", staGroups$ID[i], ".csv"))
+    write.csv2(all90, file = paste0(folder, "all90/", staGroups$ID[i], ".csv"), row.names = F)
+    write.csv2(sol, file = paste0(folder, "borders_a(v)/", staGroups$ID[i], ".csv"))
 }
 
 ################ STOP HERE AND CONTINUE WITH NEXT FILE #############################################################
