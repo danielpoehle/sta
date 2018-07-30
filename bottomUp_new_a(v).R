@@ -1,9 +1,9 @@
-setwd("/home/daniel/Dokumente/Systematisierung Analyse 2015/Pauls Skripte/")
+setwd("/home/daniel/Dokumente/sta/")
 
 source("a-v-calculations.R")
 source("T10kmCalculator.R")
 
-folder <- "./result_detail_v10/"
+folder <- "./result_detail_v11/"
 staFolder <- paste0(folder, "STAs/")
 
 
@@ -41,9 +41,9 @@ for(j in 1:length(ds$TFZ)){
 
 for(i in 1:length(staGroups$ID)){
     #print(staGroups$ID[i])
-    tempFrame <- read.csv2(file = paste0(staFolder, "STA_", staGroups$ID[i], ".csv"), stringsAsFactors = F)
+    tempFrame <- read.csv2(file = paste0(staFolder, staGroups$ID[i], ".csv"), stringsAsFactors = F)
     if(staGroups$PARTNER[i] != ""){
-        fi <- paste0(staFolder, "STA_", staGroups$ID[staGroups$PARTNER == staGroups$PARTNER[i] & staGroups$ID != staGroups$ID[i]], ".csv")
+        fi <- paste0(staFolder, staGroups$ID[staGroups$PARTNER == staGroups$PARTNER[i] & staGroups$ID != staGroups$ID[i]], ".csv")
         for(f in fi){
             tempFrame <- rbind(tempFrame, read.csv2(file = f, stringsAsFactors = F))
         }
@@ -62,7 +62,8 @@ for(i in 1:length(staGroups$ID)){
     
     a_frame <- data.frame(tr = seq(1,length(tempFrame$X)))
     
-    print(paste0(timestamp(),staGroups$ID[i], ": calculate a_frame"))
+    timestamp()
+    print(paste0("STA ", staGroups$ID[i], ": calculate a_frame"))
     for(j in 1:length(avList)){
         ind <- max(which(avList[[j]]$a >=0 & !is.na(avList[[j]]$s_kum)))
         vmax <- min(avList[[j]]$v[ind], dt$VMAX[j])
@@ -80,6 +81,8 @@ for(i in 1:length(staGroups$ID)){
         a_frame <- cbind(a_frame, check_a)
     }
     names(a_frame) <- c("tr", seq(1:length(avList)))
+    
+    write.csv2(t(a_frame)[-1,], file = paste0(folder, "a_frame/", staGroups$ID[i], ".csv"), row.names = T)
     
     x <- apply(a_frame, 2, sum)/length(tempFrame$X)
     x <- x[2:length(x)]
@@ -127,69 +130,88 @@ for(i in 1:length(staGroups$ID)){
     df <- df[order(df$a_res, df$v_res, df$b_res, df$c_res),]
     
     # find not domiated solutinos only
-    print(paste0(timestamp(),staGroups$ID[i], ": get non dominated set"))
-    dominating <- integer(0)
-    dominated <- integer(0)
-    if(length(df$v)>1){
-        dominating <- c(dominating, 1)
-        for(j in 2:(length(df$v))){
-            #print(j)
-            for(k in 1:length(dominating)){
-                test <- (df[j,c("a_res","b_res","c_res","v_res")] - df[dominating[k],c("a_res","b_res","c_res","v_res")])
-                if(sum(test >=0)==4){
-                    # j is dominated by k --> skip j and continue with next row j+1
-                    break()
-                }else if(sum(test <=0)==4){
-                    # row j dominates k --> remove k from set, add j to set and continue with next row j+1
-                    dominating <- c(dominating, j)
-                    dominating <- dominating[dominating != dominating[k]]
-                    break()
-                }
-                if(k == length(dominating)){
-                    # row j was never dominated and never dominated an existing train --> add to set
-                    dominating <- c(dominating, j)
-                }
-            }
-        }
-    }
-        
-    sol <- df[dominating,]
-    sol$select_av <- 0
-    sol$select_all <- 0
-    sol$select_t10 <- 0
-    sol$select_av[which.min(abs(0.9 - sol$a_res) + abs(0.9 - sol$v_res))[1]] <- 1
-    sol$select_all[which.min(abs(0.9 - sol$a_res) + abs(0.9 - sol$v_res) + abs(0.9 - sol$b_res) + abs(0.9 - sol$c_res))[1]] <- 1
+    # print(paste0(timestamp(),staGroups$ID[i], ": get non dominated set"))
+    # dominating <- integer(0)
+    # dominated <- integer(0)
+    # if(length(df$v)>1){
+    #     dominating <- c(dominating, 1)
+    #     for(j in 2:(length(df$v))){
+    #         #print(j)
+    #         for(k in 1:length(dominating)){
+    #             test <- (df[j,c("a_res","b_res","c_res","v_res")] - df[dominating[k],c("a_res","b_res","c_res","v_res")])
+    #             if(sum(test >=0)==4){
+    #                 # j is dominated by k --> skip j and continue with next row j+1
+    #                 break()
+    #             }else if(sum(test <=0)==4){
+    #                 # row j dominates k --> remove k from set, add j to set and continue with next row j+1
+    #                 dominating <- c(dominating, j)
+    #                 dominating <- dominating[dominating != dominating[k]]
+    #                 break()
+    #             }
+    #             if(k == length(dominating)){
+    #                 # row j was never dominated and never dominated an existing train --> add to set
+    #                 dominating <- c(dominating, j)
+    #             }
+    #         }
+    #     }
+    # }
+    #     
+    # sol <- df[dominating,]
+    # sol$select_av <- 0
+    # sol$select_all <- 0
+    # sol$select_t10 <- 0
+    # sol$select_av[which.min(abs(0.9 - sol$a_res) + abs(0.9 - sol$v_res))[1]] <- 1
+    # sol$select_all[which.min(abs(0.9 - sol$a_res) + abs(0.9 - sol$v_res) + abs(0.9 - sol$b_res) + abs(0.9 - sol$c_res))[1]] <- 1
+    # 
+    # sol <- cbind(sol, dt[sol$a,])
     
-    sol <- cbind(sol, dt[sol$a,])
-    
-    
-    print(paste0(timestamp(),staGroups$ID[i], ": calculate T10"))
-    t10 <- integer(0)
-    for(n in 1:length(sol$a)){
-        elem <- tfzNames[tfzNames$name == sol$TFZ[n], ]
-        avModel <- getAVModel(i = elem$i, j = elem$j, m = sol$TOTALWEIGHT[n], anzTfz = sol$NUM_TFZ[n], addTfzMass = T)
-        t10 <- c(t10, calculate10km(avModel = avModel,vmax = sol$v[n], breakclass = sol$c[n]))
-    }
-    sol$T10 <- t10
-    sol$select_t10[which.min(t10)[1]] <- 1
-    v90 <- 10* floor(sol$v[sol$select_t10 == 1] / 10.0)
-    
-    all90 <- all90[all90$v >= (v90 - 10) & all90$v <= (v90 + 10),]
+    timestamp()
+    print(paste0("STA ",staGroups$ID[i], ": calculate T10"))
+    # t10 <- integer(0)
+    # for(n in 1:length(sol$a)){
+    #     elem <- tfzNames[tfzNames$name == sol$TFZ[n], ]
+    #     avModel <- getAVModel(i = elem$i, j = elem$j, m = sol$TOTALWEIGHT[n], anzTfz = sol$NUM_TFZ[n], addTfzMass = T)
+    #     vm <- min(sol$v[n], sol$VMAX[n])
+    #     t10 <- c(t10, calculate10km(avModel = avModel,vmax = vm, breakclass = sol$c[n]))
+    # }
+    # sol$T10 <- t10
+    # sol$select_t10[which.min(t10)[1]] <- 1
+    # v90 <- 10* floor(sol$v[sol$select_t10 == 1] / 10.0)
+    # 
+    # all90 <- all90[all90$v >= (v90 - 10) & all90$v <= (v90 + 10),]
     
     t10 <- integer(0)
     for(n in 1:length(all90$a)){
         elem <- tfzNames[tfzNames$name == all90$TFZ[n], ]
         avModel <- getAVModel(i = elem$i, j = elem$j, m = all90$TOTALWEIGHT[n], anzTfz = all90$NUM_TFZ[n], addTfzMass = T)
-        t10 <- c(t10, calculate10km(avModel = avModel,vmax = all90$v[n], breakclass = all90$c[n]))
+        vm <- min(all90$v[n], all90$VMAX[n])
+        t10 <- c(t10, calculate10km(avModel = avModel,vmax = vm, breakclass = all90$c[n]))
     }
     
     all90$T10 <- t10
     
     write.csv2(all90, file = paste0(folder, "all90/", staGroups$ID[i], ".csv"), row.names = F)
-    write.csv2(sol, file = paste0(folder, "borders_a(v)/", staGroups$ID[i], ".csv"))
+    #write.csv2(sol, file = paste0(folder, "borders_a(v)/", staGroups$ID[i], ".csv"))
 }
 
 ################ STOP HERE AND CONTINUE WITH NEXT FILE #############################################################
+
+files <- list.files(paste0(folder, "all90/"), full.names = T, pattern = ".csv$")
+fileNames <- list.files(paste0(folder, "all90/"), full.names = F, pattern = ".csv$")
+
+for(i in 1:length(fileNames)){
+  print(fileNames[i])
+  tempFrame <- read.csv2(files[i], stringsAsFactors = F)
+  for (j in 1:length(tempFrame$a)) {
+    elem <- tfzNames[tfzNames$name == tempFrame$TFZ[j], ]
+    avModel <- getAVModel(i = elem$i, j = elem$j, m = tempFrame$TOTALWEIGHT[j], anzTfz = tempFrame$NUM_TFZ[j], addTfzMass = T)
+    tempFrame$T10[j] <- calculate10kmWithI(avModel, tempFrame$VMAX[j], tempFrame$BREAKCLASS[j], 7)
+  }
+  write.csv2(tempFrame, file = files[i], row.names = F)
+}
+
+
+############################
 
 fi <- list.files(path = "./result_detail_v5/all90/", full.names = T, pattern = ".csv$")
 for(i in 1:length(fi)){

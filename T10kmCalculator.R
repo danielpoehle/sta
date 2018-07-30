@@ -1,6 +1,11 @@
 setwd("/home/daniel/Dokumente/sta/")
 
-getA_M <- function(avModel, s_actual, v_actual){
+getA_M <- function(avModel, s_actual, v_actual, vmax){
+  
+  if(v_actual == vmax){
+    return(list(-0.000001, v_actual-1))
+  }
+  
   k <- which(avModel$v == (v_actual+1))
   a_m <- 0
   
@@ -48,14 +53,14 @@ calculate10kmWithI <- function(avModel, vmax, breakclass, i_max){
   s_target <- s_actual + avModel$s_brems[ind]
   v_actual <- v
   t_const <- 0
-  print(paste("v_act", v_actual, "s_act", round(s_actual,1), "t_act", round(t_acc + t_const, 1), "s_target", round(s_target, 1)))
+  #print(paste("v_act", v_actual, "s_act", round(s_actual,1), "t_act", round(t_acc + t_const, 1), "s_target", round(s_target, 1)))
   while (s_target < 10000) {
-    if(v_actual < 20){
+    if(v_actual < 10){
       t_const <- 50000
       break()
     }
     
-    a_m_v_next = getA_M(avModel, s_actual, v_actual)
+    a_m_v_next = getA_M(avModel, s_actual, v_actual, vmax)
     delta_t <- (a_m_v_next[[2]]- v_actual)/(3.6 * a_m_v_next[[1]])
     
     delta_s <- 0.5 * a_m_v_next[[1]] * delta_t * delta_t + v_actual * delta_t / 3.6
@@ -66,21 +71,21 @@ calculate10kmWithI <- function(avModel, vmax, breakclass, i_max){
       s_actual <- s_actual + s_rest
       delta_t <- s_rest * 3.6 / v_actual
       t_const <- t_const + delta_t
-      print(paste("v_act", v_actual, "s_act", round(s_actual,1), "start breaking"))
+      #print(paste("v_act", v_actual, "s_act", round(s_actual,1), "start breaking"))
       break()
     }
     t_const <- t_const + delta_t
     s_actual <- s_actual + delta_s
     s_target <- s_actual + avModel$s_brems[i]
     v_actual <- a_m_v_next[[2]]
-    print(paste("v_act", v_actual, "s_act", round(s_actual,1), "t_act", round(t_acc + t_const, 1), "s_target", round(s_target, 1)))
+    #print(paste("v_act", v_actual, "s_act", round(s_actual,1), "t_act", round(t_acc + t_const, 1), "s_target", round(s_target, 1)))
   }
   
   # calculate t_ges
   i <- which(avModel$v == v_actual)
   t_dec <- avModel$t_brems[i]
   
-  print(paste(t_acc, t_const, t_dec))
+  #print(paste(t_acc, t_const, t_dec))
   
   return(t_acc + t_const + t_dec)
 }
@@ -110,7 +115,7 @@ calculate10km <- function(avModel, vmax, breakclass){
     t_dec <- v/(-3.6*a_dec)
     t_const <- (10000.0 - s1) / (v / 3.6)
     
-    print(paste(t_acc, t_const, t_dec))
+    #print(paste(t_acc, t_const, t_dec))
     
     return(t_acc + t_dec + t_const)
 }
