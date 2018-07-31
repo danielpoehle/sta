@@ -2,10 +2,6 @@ setwd("/home/daniel/Dokumente/sta/")
 
 getA_M <- function(avModel, s_actual, v_actual, vmax){
   
-  if(v_actual == vmax){
-    return(list(-0.000001, v_actual-1))
-  }
-  
   k <- which(avModel$v == (v_actual+1))
   a_m <- 0
   
@@ -16,6 +12,9 @@ getA_M <- function(avModel, s_actual, v_actual, vmax){
   }
   
   if(a_m > 0){
+    if(v_actual == vmax){
+      return(list(-0.000001, v_actual-1))
+    }
     return(list(a_m, v_actual+1))
   }
   if(a_m == 0){
