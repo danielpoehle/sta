@@ -2,7 +2,10 @@ setwd("/home/daniel/Dokumente/sta/")
 
 getA_M <- function(avModel, s_actual, v_actual, vmax){
   
-  k <- which(avModel$v == (v_actual+1))
+  vModel <- -1
+  ifelse(v_actual == vmax, vModel <- vmax, vModel <- (v_actual+1))
+  
+  k <- which(avModel$v == vModel)
   a_m <- 0
   
   if(s_actual < 8000){
@@ -60,6 +63,7 @@ calculate10kmWithI <- function(avModel, vmax, breakclass, i_max){
     }
     
     a_m_v_next = getA_M(avModel, s_actual, v_actual, vmax)
+    #print(a_m_v_next)
     delta_t <- (a_m_v_next[[2]]- v_actual)/(3.6 * a_m_v_next[[1]])
     
     delta_s <- 0.5 * a_m_v_next[[1]] * delta_t * delta_t + v_actual * delta_t / 3.6
