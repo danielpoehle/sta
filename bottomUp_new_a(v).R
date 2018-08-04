@@ -205,13 +205,19 @@ for(i in 1:length(fileNames)){
   for (j in 1:length(tempFrame$a)) {
     elem <- tfzNames[tfzNames$name == tempFrame$TFZ[j], ]
     avModel <- getAVModel(i = elem$i, j = elem$j, m = tempFrame$TOTALWEIGHT[j], anzTfz = tempFrame$NUM_TFZ[j], addTfzMass = T)
-    tempFrame$T10[j] <- calculate10kmWithI(avModel, tempFrame$VMAX[j], tempFrame$BREAKCLASS[j], 7)
+    t10_half <- 0.5 * calculate10km(avModel, tempFrame$VMAX[j], tempFrame$BREAKCLASS[j]) + 
+                0.5 * calculate10kmWithI(avModel, tempFrame$VMAX[j], tempFrame$BREAKCLASS[j], 7)
+    tempFrame$T10[j] <- t10_half
   }
   write.csv2(tempFrame, file = files[i], row.names = F)
 }
 
+for(i in 1:length(fileNames)){
+  tempFrame <- read.csv2(files[i], stringsAsFactors = F)
+  if(min(tempFrame$T10) > 50000){print(paste(i, fileNames[i], ": no feasible train"))}
+}
 
-############################
+############################ STOP #################################################################
 
 fi <- list.files(path = "./result_detail_v5/all90/", full.names = T, pattern = ".csv$")
 for(i in 1:length(fi)){
