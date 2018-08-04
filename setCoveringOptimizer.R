@@ -46,6 +46,8 @@ for(i in 1:length(files)){
 }
 
 tempFrame <- tempFrame[!duplicated(tempFrame[,c("a", "c", "v")]),c("a", "b", "c", "v", "TFZ", "TOTALWEIGHT", "NUM_TFZ", "VMAX", "T10")]
+tempFrame <- tempFrame[tempFrame$T10 < 25000,]
+
 
 z <- paste(tempFrame$a, tempFrame$c, tempFrame$v, sep = "#")
 t10 <- integer(length(tempFrame$a))
@@ -66,7 +68,7 @@ for(i in 1:length(files)){
 names(a_frame) <- c("tr", z)
 
 calc <- list()
-for(num_trains in c(seq(8,600,1), length(z))){
+for(num_trains in c(seq(8,1000,1), length(z))){
     print(num_trains)
     result <- optimizeTrains(fileNames, z, t10, a_frame, num_trains)
     result <- c(result, num_trains = num_trains)
