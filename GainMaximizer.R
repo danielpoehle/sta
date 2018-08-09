@@ -1,14 +1,12 @@
-setwd("/home/daniel/Dokumente/Systematisierung Analyse 2015/Pauls Skripte/")
+setwd("/home/daniel/Dokumente/sta")
 
 source("a-v-calculations.R")
 source("T10kmCalculator.R")
 
-getFitVector <- function(allSTAs, train, completeTrains, avListAll){
+getFitVector <- function(allSTAs, train, avModel,  completeTrains, complete_avList){
     fit <- integer(length(allSTAs$tfz))
     
     # caculate a(v) and tolerance for the train
-    elem <- tfzNames[tfzNames$name == train$TFZ, ]
-    avModel <- getAVModel(i = elem$i, j = elem$j, m = train$TOTALWEIGHT, anzTfz = train$NUM_TFZ, addTfzMass = F)
     ind <- max(which(avModel$a >=0 & !is.na(avModel$s_kum)))
     vmax <- min(avModel$v[ind], train$VMAX)
     ind <- which(avModel$v == vmax)
@@ -25,14 +23,14 @@ getFitVector <- function(allSTAs, train, completeTrains, avListAll){
         
         # iterate through all trains of STA
         for(k in 1:length(allTrains$X)){
-            avModel <- avListAll[[allTrains$X[k]]]
+            avModel_single <- complete_avList[[allTrains$X[k]]]
             
-            ind2 <- max(which(avModel$a >=0 & !is.na(avModel$s_kum)))
-            vmax2 <- min(avModel$v[ind], allTrains$VMAX[k])
-            ind2 <- which(avModel$v == vmax2)
+            ind2 <- max(which(avModel_single$a >=0 & !is.na(avModel_single$s_kum)))
+            vmax2 <- min(avModel_single$v[ind], allTrains$VMAX[k])
+            ind2 <- which(avModel_single$v == vmax2)
             ind2 <- min(ind, ind2)
             
-            check_a[k] <- sum(avModel$a[1:ind2] >= a_tol[1:ind2]) == ind2
+            check_a[k] <- sum(avModel_single$a[1:ind2] >= a_tol[1:ind2]) == ind2
         }
         # 1 - class P or better, 0 - class G
         check_c <- (allTrains$BREAKCLASS != "G") >= (train$BREAKCLASS != "G")
@@ -57,15 +55,33 @@ for(i in x){
 }
 
 # get all Trains on all STA together
-files <- paste0("./result_detail_v9/STAs/STA_", staNumbers, ".csv")
-tempFrame <- data.frame()
-for(i in 1:length(files)){
-    print(files[i])
-    tmp <- read.csv2(file = files[i], stringsAsFactors = F)
-    if(length(tmp$X) < 1){next()}
-    tmp$STA <- staNumbers[i]
-    tempFrame <- rbind(tempFrame, tmp)
+folder <- "./result_detail_v11/"
+files <- list.files(path = paste0(folder, "STAs"), full.names = T)
+staNames <- gsub(".csv", "", list.files(path = paste0(folder, "STAs"), full.names = F))
+
+completeTrains <- data.frame()
+
+for(n in 1:length(files)){
+  tmp <- read.csv2(files[n], stringsAsFactors = F)
+  tmp$STA <- staNames[n]
+  completeTrains <- rbind(completeTrains, tmp)
 }
+completeTrains$X <- seq(length(completeTrains$TRAINRUN))
+
+complete_avList <- list()
+for(n in 1:length(completeTrains$X)){
+  print(n)
+  elem <- tfzNames[tfzNames$name == completeTrains$TFZ[n], ]
+  avModel <- getAVModel(i = elem$i, j = elem$j, m = completeTrains$TOTALWEIGHT[n], anzTfz = completeTrains$NUM_TFZ[n], addTfzMass = F)
+  complete_avList <- c(complete_avList, list(avModel))
+  completeTrains$T10km[n] <- 0.5 * calculate10km(avModel, min(100, completeTrains$VMAX[n]), completeTrains$BREAKCLASS[n]) + 
+                             0.5 * calculate10kmWithI(avModel, min(100, completeTrains$VMAX[n]), completeTrains$BREAKCLASS[n], 7)
+}
+  
+tempFrame <- read.csv2(file = paste0(folder, "TFZ_Frame.csv"))
+tempFrame <- tempFrame[tempFrame$VMAX >= 60,]
+tempFrame <- tempFrame[with(tempFrame, order(-VMAX, TOTALWEIGHT)), ]
+
 
 # generate avList
 avListAll <- list()
@@ -73,42 +89,38 @@ for(n in 1:length(tempFrame$TFZ)){
     print(paste(paste0(n, ":"), paste0(tempFrame$NUM_TFZ[n], "x"), tempFrame$TFZ[n], paste0(tempFrame$TOTALWEIGHT[n], "t"), 
                 paste0(tempFrame$VMAX[n], "km/h"), tempFrame$BREAKCLASS[n]))
     elem <- tfzNames[tfzNames$name == tempFrame$TFZ[n], ]
-    avModel <- getAVModel(i = elem$i, j = elem$j, m = tempFrame$TOTALWEIGHT[n], anzTfz = tempFrame$NUM_TFZ[n], addTfzMass = F)
+    avModel <- getAVModel(i = elem$i, j = elem$j, m = tempFrame$TOTALWEIGHT[n], anzTfz = tempFrame$NUM_TFZ[n], addTfzMass = T)
     avListAll <- c(avListAll, list(avModel))
-    tempFrame$T10km[n] <- calculate10km(avModel = avModel,vmax = tempFrame$VMAX[n], breakclass = tempFrame$BREAKCLASS[n])
+    tempFrame$T10km[n] <- 0.5 * calculate10km(avModel, tempFrame$VMAX[n], tempFrame$BREAKCLASS[n]) + 
+                          0.5 * calculate10kmWithI(avModel, tempFrame$VMAX[n], tempFrame$BREAKCLASS[n], 7)
 }
-tempFrame$X <- seq(length(tempFrame$X))
-completeTrains <- tempFrame
-
-# remove duplicates
-tempFrame <- tempFrame[!duplicated(tempFrame[,c("TFZ", "NUM_TFZ", "VMAX", "TOTALWEIGHT", "BREAKCLASS")]),
-                       c("TFZ", "NUM_TFZ", "VMAX", "TOTALWEIGHT", "BREAKCLASS", "BrH", "LZB", "ELECTRIC", "T10km")]
+tempFrame$X <- seq(length(tempFrame$TFZ))
 
 tempFrame$T10kmRound <- ceiling(tempFrame$T10km)
 
 
-tempFrame <- tempFrame[order(tempFrame[,"T10kmRound"], -tempFrame[, "BrH"]),]
+best600 <- tempFrame[order(tempFrame[,"T10km"]),c("X", "T10km")][seq(600),]
 
 
 
-best90Oopti <- read.csv2(file = "./bottomup/merge_a(v)_v9/SelectedFiles_Opti_v01.csv", stringsAsFactors = F)$x
+best90Oopti <- read.csv2(file = "./bottomup/merge_a(v)_v11/SelectedFiles_Opti_v01.csv", stringsAsFactors = F)$x
 maxNumberOfModelTrains <- 30
 
-for(i in length(best90Oopti):2){
-#for(i in 10:2){
+#for(i in length(best90Oopti):2){
+for(i in 16:10){
     allSTAs <- read.csv2(file = best90Oopti[i], stringsAsFactors = F)
     allSTAs <- allSTAs[allSTAs$sta %in% staNumbers, ]
     # get remaining number of gain trains to max allowed model trains
     rem <- maxNumberOfModelTrains - length(unique(paste0(allSTAs$tfz, allSTAs$num_tfz, allSTAs$vmax, allSTAs$totalmass, allSTAs$breakclass)))
     
     # select initial gainTrains befor local search
-    currentGainTrains <- tempFrame[600-10*seq(rem),]
+    currentGainTrains <- tempFrame[best600[600-10*seq(rem),]$X, ]
     
     # calculate initial vector of fit for all STA
     fitVector <- list()
     for(k in 1:rem){
         print(k)
-        fitVector <- c(fitVector, list(getFitVector(allSTAs, currentGainTrains[k,], completeTrains, avListAll)))
+        fitVector <- c(fitVector, list(getFitVector(allSTAs, currentGainTrains[k,], avListAll[[currentGainTrains$X[k]]], completeTrains, complete_avList)))
         
     }
     
@@ -126,10 +138,14 @@ for(i in length(best90Oopti):2){
     print(paste("Initial Total Gain", round(sum(currenTotalGain), 0), "with", rem, "Modeltrains:", paste(round(currenTotalGain, 0), collapse = "+")))
     
     # start optimizing the gainTrains
-    for(b in 1:5){
+    for(b in 1:3){
+      timestamp()
+      print(paste("REM", rem, "Iteration", b))
         for(j in 1:length(tempFrame$TFZ)){
-            print(paste(timestamp(),"Iteration", j))
-            newFit <- getFitVector(allSTAs, tempFrame[j,], completeTrains, avListAll)
+          if(j %% 500 == 0){
+            print(paste(j, "total gain", round(sum(currenTotalGain), 0)))
+          }
+            newFit <- getFitVector(allSTAs, tempFrame[j,], avListAll[[tempFrame$X[j]]], completeTrains, complete_avList)
             
             #print(paste(timestamp(), "calculate Gain"))
             tempTotalGain <- integer(rem)
@@ -159,8 +175,9 @@ for(i in length(best90Oopti):2){
                 currenTotalGain[k] <- sum(gain[,k][selection == k])
             }
             #print("Replacement!")
-            #print(paste("old Train:", currentGainTrains$TFZ[potReplace], 
-            #            " --->  newTrain:", tempFrame$TFZ[j]))
+            #print(paste0("old Train: ", currentGainTrains$TFZ[potReplace], " ", currentGainTrains$TOTALWEIGHT[potReplace], "t v_max= ",
+            #             currentGainTrains$VMAX[potReplace],
+            #            "km/h --->  newTrain:", tempFrame$TFZ[j], " ", tempFrame$TOTALWEIGHT[j], "t v_max= ", tempFrame$VMAX[j], "km/h"))
             #print(paste("New Total Gain", round(sum(currenTotalGain), 0), 
             #            paste0("(+ ", diff, ")"), "with", rem, "Modeltrains:", 
             #            paste(round(currenTotalGain, 0), collapse = "+")))
@@ -170,9 +187,9 @@ for(i in length(best90Oopti):2){
     }
     
     
-    write.csv2(currenTotalGain, file = paste0("./bottomup/merge_a(v)_v9/optimizedTrains/REM_", rem, "/totalGain.csv"), row.names = F)
-    write.csv2(best90Oopti[i], file = paste0("./bottomup/merge_a(v)_v9/optimizedTrains/REM_", rem, "/best90.csv"), row.names = F)
-    write.csv2(x = currentGainTrains, file = paste0("./bottomup/merge_a(v)_v9/optimizedTrains/REM_", rem, "/gainTrains_v01.csv"), row.names = F)
+    write.csv2(currenTotalGain, file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_", rem, "/totalGain.csv"), row.names = F)
+    write.csv2(best90Oopti[i], file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_", rem, "/best90.csv"), row.names = F)
+    write.csv2(x = currentGainTrains, file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_", rem, "/gainTrains_v01.csv"), row.names = F)
     
 }
 

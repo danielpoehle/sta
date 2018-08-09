@@ -1,14 +1,15 @@
-setwd("/home/daniel/Dokumente/Systematisierung Analyse 2015/Pauls Skripte/")
+setwd("/home/daniel/Dokumente/sta")
 
 source("a-v-calculations.R")
 source("T10kmCalculator.R")
+library(plyr)
 
 # all STAs
 files <- list.files(path = "./result_detail_v9/STAs/", full.names = T, pattern = ".csv$")
 fileNames <- list.files(path = "./result_detail_v9/STAs/", full.names = F, pattern = ".csv$")
 
 # all different combinations of systemtrassen
-sys <- list.files("./bottomup/merge_a(v)_v9/optimizedTrains/", full.names = T)
+sys <- list.files("./bottomup/merge_a(v)_v11/optimizedTrains/", full.names = T)
 
 # all available systemtrassen
 #systemtrassen <- read.csv2(file = "./bottomup/merge_a(v)_v2/Complete2013_v05.csv", stringsAsFactors = F)
@@ -67,8 +68,8 @@ selectSys <- function(able, gain, num_of_sys){
 
 # first step: do assignments
 
-for(k in 9:length(sys)){
-#for(k in 1:length(sys)){
+#for(k in 9:length(sys)){
+for(k in 1:length(sys)){
     print(sys[k])
     sys90 <- read.csv2(file = read.csv2(file = paste0(sys[k], "/best90.csv"), stringsAsFactors = F)$x, stringsAsFactors = F)
     gainSys <- read.csv2(file = paste0(sys[k], "/gainTrains_v01.csv"), stringsAsFactors = F)
@@ -79,7 +80,7 @@ for(k in 9:length(sys)){
     avList <- list()
     for(n in 1:length(gainSys$TFZ)){
         elem <- tfzNames[tfzNames$name == gainSys$TFZ[n], ]
-        avModel <- getAVModel(i = elem$i, j = elem$j, m = gainSys$TOTALWEIGHT[n], anzTfz = gainSys$NUM_TFZ[n], addTfzMass = F)
+        avModel <- getAVModel(i = elem$i, j = elem$j, m = gainSys$TOTALWEIGHT[n], anzTfz = gainSys$NUM_TFZ[n], addTfzMass = T)
         avList <- c(avList, list(avModel))
         r <- getReduction(avList[[n]]$a[1], avList[[n]]$a[min(101,1+gainSys$VMAX[n])]) 
         avList[[n]]$r <- avList[[n]]$a - seq(0.1,1,0.009)* r
@@ -95,7 +96,8 @@ for(k in 9:length(sys)){
             elem <- tfzNames[tfzNames$name == trains$TFZ[n], ]
             avModel <- getAVModel(i = elem$i, j = elem$j, m = trains$TOTALWEIGHT[n], anzTfz = trains$NUM_TFZ[n], addTfzMass = F)
             trainsAv <- c(trainsAv, list(avModel))
-            trains$T10km[n] <- calculate10km(avModel = avModel,vmax = trains$VMAX[n], breakclass = trains$BREAKCLASS[n])
+            trains$T10km[n] <- 0.5 * calculate10km(avModel = avModel,vmax = min(100, trains$VMAX[n]), breakclass = trains$BREAKCLASS[n]) +
+                               0.5 * calculate10kmWithI(avModel = avModel,vmax = min(100, trains$VMAX[n]), breakclass = trains$BREAKCLASS[n], 7)
         }
         
         
@@ -152,10 +154,12 @@ for(k in 9:length(sys)){
         newSys$STA <- sta
         newSys$GAIN <- selection$GAIN
         newSys$NAME <- paste0("G", selection$ID)
+        newSys$LZB <- F
+        newSys$ELECTRIC <- max(trains$ELECTRIC)
         
         s90 <- sys90[sys90$sta == sta,]
         
-        newSys <- rbind(newSys, data.frame(TFZ = s90$tfz, NUM_TFZ = s90$num_tfz, VMAX = s90$vmax, TOTALWEIGHT = s90$totalmass, 
+        newSys <- rbind.fill(newSys, data.frame(TFZ = s90$tfz, NUM_TFZ = s90$num_tfz, VMAX = s90$vmax, TOTALWEIGHT = s90$totalmass, 
                    BREAKCLASS = s90$breakclass, BrH = s90$brh, LZB = F, ELECTRIC = 1, T10km = s90$t10, 
                    T10kmRound = ceiling(s90$t10), COVERAGE = s90$total_res, STA = s90$sta, GAIN = 0, NAME = "S90",
                    stringsAsFactors = F))
@@ -164,7 +168,7 @@ for(k in 9:length(sys)){
         
         # calc s90 gain
         elem <- tfzNames[tfzNames$name == s90$tfz, ]
-        avModel <- getAVModel(i = elem$i, j = elem$j, m = s90$totalmass, anzTfz = s90$num_tfz, addTfzMass = F)
+        avModel <- getAVModel(i = elem$i, j = elem$j, m = s90$totalmass, anzTfz = s90$num_tfz, addTfzMass = T)
         r <- getReduction(avModel$a[1], avModel$a[min(101,1+s90$vmax)]) 
         avModel$r <- avModel$a - seq(0.1,1,0.009)* r
         # passfaehigkeit bzgl a(v)
@@ -204,9 +208,9 @@ for(k in 9:length(sys)){
 ######################## statistics ################################
 
 # all different combinations of systemtrassen
-sys <- list.files("./bottomup/merge_a(v)_v9/optimizedTrains/", full.names = T)
+sys <- list.files("./bottomup/merge_a(v)_v11/optimizedTrains/", full.names = T)
 
-sysN <- list.files("./bottomup/merge_a(v)_v9/optimizedTrains/", full.names = F)
+sysN <- list.files("./bottomup/merge_a(v)_v11/optimizedTrains/", full.names = F)
 overall <- data.frame(SYS = sysN, TotalSumT10km = integer(length(sysN)), 
                       TotalMedianSTABFQ = integer(length(sysN)), 
                       AnzSTA_3_Systemtrassen = integer(length(sysN)),
@@ -287,7 +291,7 @@ for(k in 1:length(sys)){
 
 overall <- overall[order(overall$TotalSumT10km),]
 
-write.csv2(overall, file = "./bottomup/merge_a(v)_v9/optimizedTrains/OverallStatistic.csv", row.names = F)
+write.csv2(overall, file = "./bottomup/merge_a(v)_v11/optimizedTrains/OverallStatistic.csv", row.names = F)
 
 
 
