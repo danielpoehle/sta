@@ -11,8 +11,8 @@ grp <- sort(unique(staGroups$GROUP))
 sta <- read.csv2(file= "./2013_Fahrlagen/180214_STA.csv", stringsAsFactors = F)
 
 
-staFiles <- list.files(path = "./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/sta/", full.names = T, pattern = ".csv$")
-staNames <- gsub(".csv", "", list.files(path = "./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/sta/", full.names = F, pattern = ".csv$"))
+staFiles <- list.files(path = "./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/sta/", full.names = T, pattern = ".csv$")
+staNames <- gsub(".csv", "", list.files(path = "./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/sta/", full.names = F, pattern = ".csv$"))
 
 wayPoints <- strsplit(data$WAY, "#")
 timePoints <- strsplit(data$DEP, "#")
@@ -78,12 +78,12 @@ for(i in 1:length(staFiles)){
                                            DIRECTION = direction, RELATION = relation,
                                            stringsAsFactors = F))
     }
-    write.csv2(result, file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/", staNames[i], ".csv"), row.names = F)
+    write.csv2(result, file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/", staNames[i], ".csv"), row.names = F)
 }
 
 
-staFiles <- list.files(path = "./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/", full.names = T, pattern = ".csv$")
-staNames <- gsub(".csv", "", list.files(path = "./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/", full.names = F, pattern = ".csv$"))
+staFiles <- list.files(path = "./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/", full.names = T, pattern = ".csv$")
+staNames <- gsub(".csv", "", list.files(path = "./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/", full.names = F, pattern = ".csv$"))
 
 sta <- read.csv2(file= "./2013_Fahrlagen/180214_STA.csv", stringsAsFactors = F)
 
@@ -128,19 +128,19 @@ for(i in 1:length(staFiles)){
     e <- ggplot(resultFrame, aes(x=TIMESLOT120, fill=SYS)) + ggtitle(paste("STA ", staNames[i])) + geom_bar() + 
       theme_minimal() + scale_fill_brewer(palette="Set1") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
       scale_x_discrete(drop=FALSE) + facet_grid(DIRECTION~.)
-    ggsave(filename=paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/plot120/STA_", staNames[i], "_120.png"),
+    ggsave(filename=paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/plot120/STA_", staNames[i], "_120.png"),
            plot=e, width = 19, height = 9)
     
     e <- ggplot(resultFrame, aes(x=TIMESLOT60, fill=SYS)) + ggtitle(paste("STA ", staNames[i])) + geom_bar() + 
         theme_minimal() + scale_fill_brewer(palette="Set1") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
         scale_x_discrete(drop=FALSE) + facet_grid(DIRECTION~.)
-    ggsave(filename=paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/plot60/STA_", staNames[i], "_60.png"),
+    ggsave(filename=paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/plot60/STA_", staNames[i], "_60.png"),
            plot=e, width = 19, height = 9)
     
     e <- ggplot(resultFrame, aes(x=TIMESLOT30, fill=SYS)) + ggtitle(paste("STA ", staNames[i])) + geom_bar() + 
         theme_minimal() + scale_fill_brewer(palette="Set1") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
         scale_x_discrete(drop=FALSE) + facet_grid(DIRECTION~.)
-    ggsave(filename=paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/plot30/STA_", staNames[i], "_30.png"),
+    ggsave(filename=paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/plot30/STA_", staNames[i], "_30.png"),
            plot=e, width = 19, height = 9)
     
     staBTS <- sta$BTS[sta$ID==staNames[i]]
@@ -149,31 +149,31 @@ for(i in 1:length(staFiles)){
     
     write.csv2(table(resultFrame$TIMESLOT60[resultFrame$DIRECTION == "Ri"], 
                      resultFrame$SYS[resultFrame$DIRECTION == "Ri"]), 
-               file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/tables/STA_", staNames[i], "_Ri_",
+               file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/tables/STA_", staNames[i], "_Ri_",
                              fBTS, "-", lBTS,".csv"), 
                row.names = T)
     
     write.csv2(table(resultFrame$TIMESLOT60[resultFrame$DIRECTION == "GRi"], 
                      resultFrame$SYS[resultFrame$DIRECTION == "GRi"]), 
-               file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/tables/STA_", staNames[i], "_GRi_",
+               file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/tables/STA_", staNames[i], "_GRi_",
                              lBTS, "-", fBTS,".csv"), 
                row.names = T)
     
     write.csv2(table(resultFrame$TIMESLOT120[resultFrame$DIRECTION == "Ri"], 
                      resultFrame$SYS[resultFrame$DIRECTION == "Ri"]), 
-               file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/tables120/STA_", staNames[i], "_Ri_",
+               file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/tables120/STA_", staNames[i], "_Ri_",
                              fBTS, "-", lBTS,".csv"), 
                row.names = T)
     
     write.csv2(table(resultFrame$TIMESLOT120[resultFrame$DIRECTION == "GRi"], 
                      resultFrame$SYS[resultFrame$DIRECTION == "GRi"]), 
-               file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/tables120/STA_", staNames[i], "_GRi_",
+               file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/tables120/STA_", staNames[i], "_GRi_",
                              lBTS, "-", fBTS,".csv"), 
                row.names = T)
 }
 
-staFiles <- list.files(path = "./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/tables120/", full.names = T, pattern = ".csv$")
-staNames <- gsub(".csv", "", list.files(path = "./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/tables120/", full.names = F, pattern = ".csv$"))
+staFiles <- list.files(path = "./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/tables120/", full.names = T, pattern = ".csv$")
+staNames <- gsub(".csv", "", list.files(path = "./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/tables120/", full.names = F, pattern = ".csv$"))
 
 weightSTA <- integer(length(staFiles))
 for(i in 1:length(staFiles)){
@@ -223,7 +223,7 @@ for(i in 1:length(staFiles)){
     if(length(sysTrains) >= 2){resultFrame[,3] <- secondCharacteristic}
     
     
-    write.csv2(resultFrame, file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_14/tagesgang/filledTable120/FILLTABLE120_", staNames[i],".csv"), row.names = F)
+    write.csv2(resultFrame, file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_13/tagesgang/filledTable120/FILLTABLE120_", staNames[i],".csv"), row.names = F)
 }
 
 

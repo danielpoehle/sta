@@ -93,6 +93,25 @@ calculate10kmWithI <- function(avModel, vmax, breakclass, i_max){
   return(t_acc + t_const + t_dec)
 }
 
+calculate10kmAcceleration <- function(avModel, i_max){
+  avModel$a_i <- avModel$a - 9.81* i_max / 1000
+  avModel$t_kum_i <- 0
+  avModel$s_kum_i <- 0
+  for(k in 2:length(avModel$v)){
+    a_m <- 2 * avModel$a_i[k] * avModel$a_i[k-1] / (avModel$a_i[k] + avModel$a_i[k-1])
+    if(a_m < 0){
+      avModel$t_kum_i[k] <- NA
+      avModel$s_kum_i[k] <- NA
+    }else{
+      delta_t <- (avModel$v[k]- avModel$v[k-1])/(3.6 * a_m)
+      avModel$t_kum_i[k] <- avModel$t_kum_i[k-1] + delta_t
+      avModel$s_kum_i[k] <- avModel$s_kum_i[k-1] + 0.5 * a_m * delta_t * delta_t + avModel$v[k-1] * delta_t / 3.6
+    } 
+  }
+  if(is.na(avModel$t_kum_i[31]) || avModel$t_kum_i[31] > 600){return(200000)}
+  return(avModel$t_kum_i[31])
+}
+
 calculate10km <- function(avModel, vmax, breakclass){
     ind <- max(which(avModel$a >=0 & !is.na(avModel$s_kum)))
     v <- min(avModel$v[ind], vmax)

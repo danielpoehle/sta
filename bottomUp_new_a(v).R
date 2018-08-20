@@ -3,7 +3,7 @@ setwd("/home/daniel/Dokumente/sta/")
 source("a-v-calculations.R")
 source("T10kmCalculator.R")
 
-folder <- "./result_detail_v11/"
+folder <- "./result_detail_v12/"
 staFolder <- paste0(folder, "STAs/")
 
 
@@ -14,6 +14,9 @@ staGroups <- read.csv2(file = "./2013_Fahrlagen/STAGROUPS_v06.csv", stringsAsFac
 staGroups$PARTNER[is.na(staGroups$PARTNER)] <- ""
 
 dt <- read.csv2(file = paste0(folder, "TFZ_Frame.csv"))
+dt$VMAX <- NULL
+dt <- unique(dt)
+dt <- dt[dt$TOTALWEIGHT >=500,]
 
 avList <- list()
 for(j in 1:length(dt$TFZ)){
@@ -66,8 +69,8 @@ for(i in 1:length(staGroups$ID)){
     print(paste0("STA ", staGroups$ID[i], ": calculate a_frame"))
     for(j in 1:length(avList)){
         ind <- max(which(avList[[j]]$a >=0 & !is.na(avList[[j]]$s_kum)))
-        vmax <- min(avList[[j]]$v[ind], dt$VMAX[j])
-        ind <- which(avList[[j]]$v == vmax)
+        vmax <- avList[[j]]$v[ind]
+        
         
         # get tolerance of a(v)
         reduce <- getReduction(avList[[j]]$a[1], avList[[j]]$a[ind])
@@ -76,6 +79,9 @@ for(i in 1:length(staGroups$ID)){
         
         for(k in 1:length(tempFrame$X)){
             p <- which(tempFrame$TFZ[k] == ds$TFZ & tempFrame$TOTALWEIGHT[k] == ds$TOTALWEIGHT & tempFrame$NUM_TFZ[k] == ds$NUM_TFZ)
+            ind_tf <- max(which(avSTA[[p]]$a >=0 & !is.na(avSTA[[p]]$s_kum)))
+            vm <- min(avSTA[[p]]$v[ind_tf], tempFrame$VMAX[k])
+            ind <- min(ind, which(avSTA[[p]]$v == vm))
             check_a[k] <- sum(avSTA[[p]]$a[1:ind] >= a_tol[1:ind]) == ind
         }
         a_frame <- cbind(a_frame, check_a)
@@ -127,7 +133,7 @@ for(i in 1:length(staGroups$ID)){
     
     df <- df[df$total_res >= 0.9,]
     all90 <- cbind(df, dt[df$a,])
-    df <- df[order(df$a_res, df$v_res, df$b_res, df$c_res),]
+    #df <- df[order(df$a_res, df$v_res, df$b_res, df$c_res),]
     
     # find not domiated solutinos only
     # print(paste0(timestamp(),staGroups$ID[i], ": get non dominated set"))
@@ -184,11 +190,19 @@ for(i in 1:length(staGroups$ID)){
     for(n in 1:length(all90$a)){
         elem <- tfzNames[tfzNames$name == all90$TFZ[n], ]
         avModel <- getAVModel(i = elem$i, j = elem$j, m = all90$TOTALWEIGHT[n], anzTfz = all90$NUM_TFZ[n], addTfzMass = T)
-        vm <- min(all90$v[n], all90$VMAX[n])
-        t10 <- c(t10, calculate10km(avModel = avModel,vmax = vm, breakclass = all90$c[n]))
+        t10_avg <- 0.5 * calculate10km(avModel, all90$v[n], all90$c[n]) + 
+                   0.4 * calculate10kmWithI(avModel, all90$v[n], all90$c[n], 7) + 
+                   0.1 * calculate10kmAcceleration(avModel, 10)
+        t10 <- c(t10, t10_avg)
     }
     
     all90$T10 <- t10
+    
+    if(sum(t10 < 20000) <=0){
+      all90 <- all90[which.min(t10),]
+    }else{
+      all90 <- all90[t10 < 20000,]
+    }
     
     write.csv2(all90, file = paste0(folder, "all90/", staGroups$ID[i], ".csv"), row.names = F)
     #write.csv2(sol, file = paste0(folder, "borders_a(v)/", staGroups$ID[i], ".csv"))
@@ -206,7 +220,8 @@ for(i in 1:length(fileNames)){
     elem <- tfzNames[tfzNames$name == tempFrame$TFZ[j], ]
     avModel <- getAVModel(i = elem$i, j = elem$j, m = tempFrame$TOTALWEIGHT[j], anzTfz = tempFrame$NUM_TFZ[j], addTfzMass = T)
     t10_half <- 0.5 * calculate10km(avModel, tempFrame$VMAX[j], tempFrame$BREAKCLASS[j]) + 
-                0.5 * calculate10kmWithI(avModel, tempFrame$VMAX[j], tempFrame$BREAKCLASS[j], 7)
+                0.4 * calculate10kmWithI(avModel, tempFrame$VMAX[j], tempFrame$BREAKCLASS[j], 7) + 
+                0.1 * calculate10kmAcceleration(avModel, 10)
     tempFrame$T10[j] <- t10_half
   }
   write.csv2(tempFrame, file = files[i], row.names = F)
@@ -214,7 +229,10 @@ for(i in 1:length(fileNames)){
 
 for(i in 1:length(fileNames)){
   tempFrame <- read.csv2(files[i], stringsAsFactors = F)
-  if(min(tempFrame$T10) > 50000){print(paste(i, fileNames[i], ": no feasible train"))}
+  if(min(tempFrame$T10) > 25000){print(paste(i, fileNames[i], ": no feasible train"))}
+  print(paste(fileNames[i], "MinT10", round(min(tempFrame$T10), 1), 
+              "5%Quantil", round(quantile(x = tempFrame$T10, probs = 0.05), 1),
+              "Anz < 1.1*Min", sum(tempFrame$T10 <= 1.05*min(tempFrame$T10))))
 }
 
 ############################ STOP #################################################################

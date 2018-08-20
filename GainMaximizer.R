@@ -103,11 +103,11 @@ best600 <- tempFrame[order(tempFrame[,"T10km"]),c("X", "T10km")][seq(600),]
 
 
 
-best90Oopti <- read.csv2(file = "./bottomup/merge_a(v)_v11/SelectedFiles_Opti_v01.csv", stringsAsFactors = F)$x
+best90Oopti <- read.csv2(file = "./bottomup/merge_a(v)_v12/SelectedFiles_Opti_v01.csv", stringsAsFactors = F)$x
 maxNumberOfModelTrains <- 30
 
-#for(i in length(best90Oopti):2){
-for(i in 16:10){
+for(i in length(best90Oopti):2){
+#for(i in 16:10){
     allSTAs <- read.csv2(file = best90Oopti[i], stringsAsFactors = F)
     allSTAs <- allSTAs[allSTAs$sta %in% staNumbers, ]
     # get remaining number of gain trains to max allowed model trains
@@ -138,7 +138,7 @@ for(i in 16:10){
     print(paste("Initial Total Gain", round(sum(currenTotalGain), 0), "with", rem, "Modeltrains:", paste(round(currenTotalGain, 0), collapse = "+")))
     
     # start optimizing the gainTrains
-    for(b in 1:3){
+    for(b in 1:2){
       timestamp()
       print(paste("REM", rem, "Iteration", b))
         for(j in 1:length(tempFrame$TFZ)){
@@ -187,9 +187,9 @@ for(i in 16:10){
     }
     
     
-    write.csv2(currenTotalGain, file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_", rem, "/totalGain.csv"), row.names = F)
-    write.csv2(best90Oopti[i], file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_", rem, "/best90.csv"), row.names = F)
-    write.csv2(x = currentGainTrains, file = paste0("./bottomup/merge_a(v)_v11/optimizedTrains/REM_", rem, "/gainTrains_v01.csv"), row.names = F)
+    write.csv2(currenTotalGain, file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_", rem, "/totalGain.csv"), row.names = F)
+    write.csv2(best90Oopti[i], file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_", rem, "/best90.csv"), row.names = F)
+    write.csv2(x = currentGainTrains, file = paste0("./bottomup/merge_a(v)_v12/optimizedTrains/REM_", rem, "/gainTrains_v01.csv"), row.names = F)
     
 }
 
