@@ -199,7 +199,8 @@ for(i in 1:length(staGroups$ID)){
     all90$T10 <- t10
     
     if(sum(t10 < 20000) <=0){
-      all90 <- all90[which.min(t10),]
+      s <- sort(unique(t10))[20]
+      all90 <- all90[t10 <= s,]
     }else{
       all90 <- all90[t10 < 20000,]
     }
