@@ -192,7 +192,7 @@ for(i in 1:length(staGroups$ID)){
         avModel <- getAVModel(i = elem$i, j = elem$j, m = all90$TOTALWEIGHT[n], anzTfz = all90$NUM_TFZ[n], addTfzMass = T)
         t10_avg <- 0.5 * calculate10km(avModel, all90$v[n], all90$c[n]) + 
                    0.4 * calculate10kmWithI(avModel, all90$v[n], all90$c[n], 7) + 
-                   0.1 * calculate10kmAcceleration(avModel, 10)
+                   0.1 * calculate10kmAcceleration(avModel, 8)
         t10 <- c(t10, t10_avg)
     }
     
@@ -221,7 +221,7 @@ for(i in 1:length(fileNames)){
     avModel <- getAVModel(i = elem$i, j = elem$j, m = tempFrame$TOTALWEIGHT[j], anzTfz = tempFrame$NUM_TFZ[j], addTfzMass = T)
     t10_half <- 0.5 * calculate10km(avModel, tempFrame$VMAX[j], tempFrame$BREAKCLASS[j]) + 
                 0.4 * calculate10kmWithI(avModel, tempFrame$VMAX[j], tempFrame$BREAKCLASS[j], 7) + 
-                0.1 * calculate10kmAcceleration(avModel, 10)
+                0.1 * calculate10kmAcceleration(avModel, 8)
     tempFrame$T10[j] <- t10_half
   }
   write.csv2(tempFrame, file = files[i], row.names = F)
