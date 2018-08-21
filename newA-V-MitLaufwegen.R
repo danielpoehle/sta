@@ -235,7 +235,7 @@ for(i in 1:length(staNumber)){
             }
             
             ### if tfzChange is on or after first BTS of STA then ignore it
-            if (idChange >= idSTA){
+            if (idChange > idSTA){ # replaced '>=' with '>' to match changes on the first BTS
                 print(paste("change on or after STA --> ignore it:", trainrun[j]))
                 next()
             }
