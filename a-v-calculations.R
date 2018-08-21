@@ -1,4 +1,3 @@
-setwd("/home/daniel/Dokumente/Systematisierung Analyse 2015/Pauls Skripte/")
 library(XML)
 
 

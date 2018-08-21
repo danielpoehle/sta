@@ -1,5 +1,3 @@
-setwd("/home/daniel/Dokumente/sta/")
-
 getA_M <- function(avModel, s_actual, v_actual, vmax){
   
   vModel <- -1
